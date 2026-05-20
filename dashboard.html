@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>TravClan Hotel Bookings — BI Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0F172A; --card: #1E293B; --border: #334155;
+    --text: #E2E8F0; --muted: #94A3B8; --accent: #06B6D4;
+    --green: #10B981; --red: #EF4444; --yellow: #F59E0B;
+    --purple: #8B5CF6; --pink: #EC4899; --orange: #F97316;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,sans-serif; min-height:100vh; }
+
+  /* HEADER */
+  .header { background:linear-gradient(135deg,#1E293B 0%,#0F172A 100%); border-bottom:1px solid var(--border); padding:20px 32px; display:flex; justify-content:space-between; align-items:center; }
+  .header-left h1 { font-size:22px; font-weight:700; color:white; }
+  .header-left p { font-size:13px; color:var(--muted); margin-top:2px; }
+  .badge { background:var(--accent); color:#0F172A; padding:4px 12px; border-radius:20px; font-size:11px; font-weight:700; letter-spacing:0.5px; }
+
+  /* EXEC SUMMARY */
+  .exec-summary { background:linear-gradient(135deg,#1E3A4A 0%,#1E293B 100%); border:1px solid #0E4D6A; margin:24px 32px 0; padding:20px 24px; border-radius:12px; }
+  .exec-summary h2 { color:var(--accent); font-size:13px; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:10px; }
+  .exec-summary p { font-size:13.5px; color:#CBD5E1; line-height:1.6; }
+  .exec-summary strong { color:white; }
+
+  /* KPI GRID */
+  .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; padding:24px 32px; }
+  .kpi-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px 20px; transition:transform 0.2s,box-shadow 0.2s; }
+  .kpi-card:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.4); }
+  .kpi-card .label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.8px; font-weight:600; }
+  .kpi-card .value { font-size:28px; font-weight:800; color:white; margin:6px 0 4px; line-height:1; }
+  .kpi-card .sub { font-size:12px; }
+  .kpi-card .sub.up { color:var(--green); }
+  .kpi-card .sub.down { color:var(--red); }
+  .kpi-card .sub.neutral { color:var(--muted); }
+  .kpi-accent { border-left:3px solid var(--accent); }
+  .kpi-green { border-left:3px solid var(--green); }
+  .kpi-red { border-left:3px solid var(--red); }
+  .kpi-yellow { border-left:3px solid var(--yellow); }
+  .kpi-purple { border-left:3px solid var(--purple); }
+  .kpi-orange { border-left:3px solid var(--orange); }
+  .kpi-pink { border-left:3px solid var(--pink); }
+  .kpi-teal { border-left:3px solid #14B8A6; }
+
+  /* SECTION LABEL */
+  .section-label { padding:0 32px 8px; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; font-weight:600; }
+
+  /* CHART GRID */
+  .chart-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:0 32px 16px; }
+  .chart-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; padding:0 32px 16px; }
+  .chart-grid-full { padding:0 32px 16px; }
+  .chart-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px; }
+  .chart-card h3 { font-size:13px; font-weight:600; color:white; margin-bottom:4px; }
+  .chart-card .chart-sub { font-size:11px; color:var(--muted); margin-bottom:16px; }
+  .chart-card canvas { max-height:240px; }
+
+  /* INSIGHTS */
+  .insights-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; padding:0 32px 16px; }
+  .insight-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px; }
+  .insight-card .icon { font-size:22px; margin-bottom:8px; }
+  .insight-card h4 { font-size:13px; font-weight:700; color:white; margin-bottom:6px; }
+  .insight-card p { font-size:12px; color:var(--muted); line-height:1.5; }
+  .insight-card .tag { display:inline-block; margin-top:8px; padding:3px 10px; border-radius:20px; font-size:10px; font-weight:700; letter-spacing:0.5px; }
+  .tag-red { background:rgba(239,68,68,0.15); color:var(--red); }
+  .tag-green { background:rgba(16,185,129,0.15); color:var(--green); }
+  .tag-yellow { background:rgba(245,158,11,0.15); color:var(--yellow); }
+
+  /* RECOMMENDATIONS */
+  .recs-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; padding:0 32px 32px; }
+  .rec-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:18px; }
+  .rec-card .rec-num { font-size:28px; font-weight:900; color:var(--border); line-height:1; margin-bottom:8px; }
+  .rec-card h4 { font-size:13px; font-weight:700; color:white; margin-bottom:6px; }
+  .rec-card p { font-size:12px; color:var(--muted); line-height:1.5; }
+  .rec-card .impact { font-size:11px; margin-top:10px; font-weight:600; }
+  .impact-high { color:var(--green); }
+  .impact-med { color:var(--yellow); }
+
+  /* TABLE */
+  .table-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px; }
+  .table-card h3 { font-size:13px; font-weight:600; color:white; margin-bottom:4px; }
+  .table-card .chart-sub { font-size:11px; color:var(--muted); margin-bottom:16px; }
+  table { width:100%; border-collapse:collapse; }
+  th { text-align:left; padding:8px 12px; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.6px; border-bottom:1px solid var(--border); }
+  td { padding:10px 12px; font-size:13px; color:var(--text); border-bottom:1px solid rgba(51,65,85,0.4); }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:rgba(255,255,255,0.03); }
+  .pill { display:inline-block; padding:2px 10px; border-radius:20px; font-size:11px; font-weight:600; }
+  .pill-red { background:rgba(239,68,68,0.15); color:var(--red); }
+  .pill-green { background:rgba(16,185,129,0.15); color:var(--green); }
+  .pill-yellow { background:rgba(245,158,11,0.15); color:var(--yellow); }
+
+  /* FOOTER */
+  .footer { text-align:center; padding:16px; border-top:1px solid var(--border); font-size:11px; color:var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <h1>🏨 TravClan Hotel Bookings — BI Dashboard</h1>
+    <p>Dataset: Hotel_bookings_final.csv &nbsp;|&nbsp; Period: Apr 2024 – Apr 2025 &nbsp;|&nbsp; 30,000 Records</p>
+  </div>
+  <span class="badge">BUSINESS ANALYST ASSESSMENT</span>
+</div>
+
+<!-- EXECUTIVE SUMMARY -->
+<div class="exec-summary">
+  <h2>📋 Executive Summary</h2>
+  <p>Analysis of <strong>30,000 hotel booking transactions</strong> across 10 US cities reveals a <strong>20.2% cancellation rate</strong> and an additional <strong>7.5% booking failure rate</strong> — putting a combined <strong>$196M+ in annualized booking value at risk</strong>. The Web channel dominates revenue ($423M), while Travel Agents post the highest cancellation rate (27.9%). Seasonal spikes in July–August (30%+ cancellations) and December–January demand targeted intervention. Standard rooms are disproportionately cancelled (23.3%) despite representing 55% of inventory. Mobile App checkout failures (10.9%) present a quick-win technical opportunity.</p>
+</div>
+
+<!-- KPI CARDS -->
+<div class="kpi-grid">
+  <div class="kpi-card kpi-accent">
+    <div class="label">Total Bookings</div>
+    <div class="value">30,000</div>
+    <div class="sub neutral">Apr 2024 – Apr 2025</div>
+  </div>
+  <div class="kpi-card kpi-green">
+    <div class="label">Confirmed Revenue</div>
+    <div class="value">$550M</div>
+    <div class="sub up">↑ 21,672 confirmed bookings</div>
+  </div>
+  <div class="kpi-card kpi-red">
+    <div class="label">Cancellation Rate</div>
+    <div class="value">20.2%</div>
+    <div class="sub down">↑ High — industry avg ~15%</div>
+  </div>
+  <div class="kpi-card kpi-yellow">
+    <div class="label">Failure Rate</div>
+    <div class="value">7.5%</div>
+    <div class="sub down">2,258 failed transactions</div>
+  </div>
+  <div class="kpi-card kpi-purple">
+    <div class="label">Avg Booking Value</div>
+    <div class="value">$25,081</div>
+    <div class="sub neutral">Across all channels</div>
+  </div>
+  <div class="kpi-card kpi-orange">
+    <div class="label">Total Markup Earned</div>
+    <div class="value">$150.8M</div>
+    <div class="sub up">Avg markup: $6,963/booking</div>
+  </div>
+  <div class="kpi-card kpi-pink">
+    <div class="label">Avg Stay Length</div>
+    <div class="value">4.0 nights</div>
+    <div class="sub neutral">Range: 1 – 7 nights</div>
+  </div>
+  <div class="kpi-card kpi-teal">
+    <div class="label">Coupon Usage</div>
+    <div class="value">20.6%</div>
+    <div class="sub neutral">6,193 of 30,000 bookings</div>
+  </div>
+</div>
+
+<!-- TREND CHARTS -->
+<div class="section-label">📈 TEMPORAL TRENDS</div>
+<div class="chart-grid-2">
+  <div class="chart-card">
+    <h3>Monthly Booking Revenue</h3>
+    <div class="chart-sub">Total booking value ($M) per month — peak in March 2025</div>
+    <canvas id="revenueChart"></canvas>
+  </div>
+  <div class="chart-card">
+    <h3>Monthly Cancellation Rate</h3>
+    <div class="chart-sub">Jul & Aug spike to 30%+ — holiday season effect</div>
+    <canvas id="cancelChart"></canvas>
+  </div>
+</div>
+
+<!-- CHANNEL & ROOM CHARTS -->
+<div class="section-label">📊 CHANNEL & ROOM TYPE ANALYSIS</div>
+<div class="chart-grid-3">
+  <div class="chart-card">
+    <h3>Revenue by Booking Channel</h3>
+    <div class="chart-sub">Web drives 56% of total revenue</div>
+    <canvas id="channelRevChart"></canvas>
+  </div>
+  <div class="chart-card">
+    <h3>Cancellation & Failure by Channel</h3>
+    <div class="chart-sub">Travel Agent: worst cancellation | Mobile: worst failures</div>
+    <canvas id="channelRiskChart"></canvas>
+  </div>
+  <div class="chart-card">
+    <h3>Cancellation by Room Type</h3>
+    <div class="chart-sub">Standard rooms: highest cancellation (23.3%)</div>
+    <canvas id="roomChart"></canvas>
+  </div>
+</div>
+
+<!-- CITY & SEASONAL -->
+<div class="section-label">🌍 CITY & SEASONAL PATTERNS</div>
+<div class="chart-grid-2">
+  <div class="chart-card">
+    <h3>Revenue by City (Top 10)</h3>
+    <div class="chart-sub">Los Angeles leads at $77.1M — all cities perform similarly</div>
+    <canvas id="cityChart"></canvas>
+  </div>
+  <div class="chart-card">
+    <h3>Seasonal Cancellation Pattern</h3>
+    <div class="chart-sub">Summer (Jul/Aug) and winter holidays (Dec/Jan) are high-risk periods</div>
+    <canvas id="seasonalChart"></canvas>
+  </div>
+</div>
+
+<!-- STAR & PAYMENT -->
+<div class="section-label">⭐ STAR RATING & PAYMENT ANALYSIS</div>
+<div class="chart-grid-2">
+  <div class="chart-card">
+    <h3>Cancellation Rate by Star Rating</h3>
+    <div class="chart-sub">5-star hotels have the highest cancellation (21.3%)</div>
+    <canvas id="starChart"></canvas>
+  </div>
+  <div class="chart-card">
+    <h3>Cancellation Rate by Payment Method</h3>
+    <div class="chart-sub">Bank Transfer shows lowest risk; PayPal highest</div>
+    <canvas id="paymentChart"></canvas>
+  </div>
+</div>
+
+<!-- CITY TABLE -->
+<div class="section-label">📋 CITY PERFORMANCE BREAKDOWN</div>
+<div style="padding:0 32px 16px;">
+  <div class="table-card">
+    <h3>City-Level Performance Summary</h3>
+    <div class="chart-sub">Revenue, volume and cancellation rates across all 10 markets</div>
+    <table>
+      <thead><tr><th>City</th><th>Revenue ($M)</th><th>Cancellation Rate</th><th>Risk Level</th></tr></thead>
+      <tbody>
+        <tr><td>Los Angeles</td><td>$77.1M</td><td>20.9%</td><td><span class="pill pill-yellow">Medium</span></td></tr>
+        <tr><td>San Francisco</td><td>$77.1M</td><td>19.9%</td><td><span class="pill pill-green">Low</span></td></tr>
+        <tr><td>Chicago</td><td>$76.7M</td><td>20.5%</td><td><span class="pill pill-yellow">Medium</span></td></tr>
+        <tr><td>Boston</td><td>$75.5M</td><td>20.2%</td><td><span class="pill pill-yellow">Medium</span></td></tr>
+        <tr><td>Orlando</td><td>$75.1M</td><td>20.5%</td><td><span class="pill pill-yellow">Medium</span></td></tr>
+        <tr><td>New York</td><td>$74.9M</td><td>20.3%</td><td><span class="pill pill-yellow">Medium</span></td></tr>
+        <tr><td>Las Vegas</td><td>$74.9M</td><td>20.3%</td><td><span class="pill pill-yellow">Medium</span></td></tr>
+        <tr><td>Dallas</td><td>$74.0M</td><td>20.0%</td><td><span class="pill pill-green">Low</span></td></tr>
+        <tr><td>Miami</td><td>$73.6M</td><td>20.3%</td><td><span class="pill pill-yellow">Medium</span></td></tr>
+        <tr><td>Seattle</td><td>$73.6M</td><td>19.4%</td><td><span class="pill pill-green">Low</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- KEY INSIGHTS -->
+<div class="section-label">💡 KEY INSIGHTS & ROOT CAUSES</div>
+<div class="insights-grid">
+  <div class="insight-card">
+    <div class="icon">🔥</div>
+    <h4>Summer Cancellation Spike</h4>
+    <p>July (30.3%) and August (28.8%) show cancellation rates nearly double the baseline (~17%). Travelers book early but switch to better deals as summer approaches. Weather uncertainty for outdoor destinations also contributes.</p>
+    <span class="tag tag-red">CRITICAL RISK</span>
+  </div>
+  <div class="insight-card">
+    <div class="icon">📱</div>
+    <h4>Mobile App Checkout Failures</h4>
+    <p>The Mobile App has a 10.9% booking failure rate vs Web's 5.2% — a gap of 5.7 percentage points. This suggests payment gateway friction, session timeouts, or poor UX at checkout, causing revenue leakage.</p>
+    <span class="tag tag-red">QUICK FIX</span>
+  </div>
+  <div class="insight-card">
+    <div class="icon">🤝</div>
+    <h4>Travel Agent Channel Underperforms</h4>
+    <p>Travel Agents generate only $73M (10% of revenue) but have the highest cancellation rate (27.9%). This channel has lower commitment from end-customers and adds intermediary friction to the booking process.</p>
+    <span class="tag tag-yellow">REVIEW NEEDED</span>
+  </div>
+  <div class="insight-card">
+    <div class="icon">🛏️</div>
+    <h4>Standard Room Cancellation Problem</h4>
+    <p>Standard rooms (55% of inventory) have a 23.3% cancellation rate vs Deluxe's 16%. Price-sensitive customers use Standard rooms as "placeholder" bookings while they search for better deals.</p>
+    <span class="tag tag-yellow">POLICY CHANGE</span>
+  </div>
+  <div class="insight-card">
+    <div class="icon">⭐</div>
+    <h4>5-Star Paradox</h4>
+    <p>Despite commanding the highest average booking values, 5-star properties have the highest cancellation rate (21.3%). Customers may aspirationally book premium properties then downgrade when costs become real.</p>
+    <span class="tag tag-yellow">INVESTIGATE</span>
+  </div>
+  <div class="insight-card">
+    <div class="icon">💳</div>
+    <h4>Bank Transfer = Commitment Signal</h4>
+    <p>Bank Transfer users cancel less (19.2%) than PayPal (20.8%). The friction in bank transfers creates a natural commitment filter — customers who transfer are more serious about their booking.</p>
+    <span class="tag tag-green">OPPORTUNITY</span>
+  </div>
+</div>
+
+<!-- RECOMMENDATIONS -->
+<div class="section-label">✅ BUSINESS RECOMMENDATIONS</div>
+<div class="recs-grid">
+  <div class="rec-card">
+    <div class="rec-num">01</div>
+    <h4>Non-Refundable Discount Tiers</h4>
+    <p>Introduce a 10-15% discount for non-refundable bookings during Jul/Aug and Dec/Jan. This converts price-sensitive customers to committed bookings and reduces seasonal cancellation spikes.</p>
+    <div class="impact impact-high">⚡ Impact: HIGH | Timeline: 4 weeks</div>
+  </div>
+  <div class="rec-card">
+    <div class="rec-num">02</div>
+    <h4>Fix Mobile App Checkout</h4>
+    <p>Audit and fix Mobile App payment flow. Reducing failure rate from 10.9% to 6% (Web level) could recover ~$14M+ in annual booking value. Add payment retry logic and Apple/Google Pay.</p>
+    <div class="impact impact-high">⚡ Impact: HIGH | Timeline: 6–8 weeks</div>
+  </div>
+  <div class="rec-card">
+    <div class="rec-num">03</div>
+    <h4>Travel Agent Strategy Review</h4>
+    <p>Renegotiate contracts with Travel Agents to include cancellation penalties passed to agents. Alternatively, shift focus to direct Web/App acquisition with targeted SEO and paid campaigns.</p>
+    <div class="impact impact-med">📊 Impact: MEDIUM | Timeline: 3 months</div>
+  </div>
+  <div class="rec-card">
+    <div class="rec-num">04</div>
+    <h4>Dynamic Pricing Engine</h4>
+    <p>Implement real-time pricing adjustments based on demand, seasonality, and cancellation risk scores. Premium pricing during Jul–Aug, early-bird discounts for off-peak months (Nov, Apr).</p>
+    <div class="impact impact-high">⚡ Impact: HIGH | Timeline: 3–6 months</div>
+  </div>
+  <div class="rec-card">
+    <div class="rec-num">05</div>
+    <h4>Loyalty & Repeat Booking Program</h4>
+    <p>Launch a points-based loyalty program. Currently only ~20% of bookings appear to be repeat customers. A 10% increase in repeat bookings could add $30M+ in confirmed revenue annually.</p>
+    <div class="impact impact-high">⚡ Impact: HIGH | Timeline: 2–3 months</div>
+  </div>
+  <div class="rec-card">
+    <div class="rec-num">06</div>
+    <h4>Upgrade Migration Strategy</h4>
+    <p>Offer Deluxe rooms at a small premium to Standard bookers at checkout. Since Deluxe has 16% cancellation vs Standard's 23%, migrating even 20% of Standard bookers reduces churn significantly.</p>
+    <div class="impact impact-med">📊 Impact: MEDIUM | Timeline: 4–6 weeks</div>
+  </div>
+</div>
+
+<div class="footer">TravClan Hotel Bookings Analysis &nbsp;|&nbsp; Business Analyst Intern Assessment &nbsp;|&nbsp; Dataset: 30,000 records | Apr 2024 – Apr 2025</div>
+
+<script>
+const C = {
+  accent: '#06B6D4', green: '#10B981', red: '#EF4444', yellow: '#F59E0B',
+  purple: '#8B5CF6', orange: '#F97316', pink: '#EC4899',
+  grid: 'rgba(51,65,85,0.5)', text: '#94A3B8', white: '#E2E8F0',
+  bg: '#1E293B'
+};
+
+const baseOpts = {
+  responsive: true, maintainAspectRatio: true,
+  plugins: { legend: { labels: { color: C.text, font: { size: 11 } } } },
+  scales: {
+    x: { grid: { color: C.grid }, ticks: { color: C.text, font: { size: 10 } } },
+    y: { grid: { color: C.grid }, ticks: { color: C.text, font: { size: 10 } } }
+  }
+};
+
+// Monthly Revenue
+new Chart(document.getElementById('revenueChart'), {
+  type: 'line',
+  data: {
+    labels: ["Apr'24","May'24","Jun'24","Jul'24","Aug'24","Sep'24","Oct'24","Nov'24","Dec'24","Jan'25","Feb'25","Mar'25","Apr'25"],
+    datasets: [{
+      label: 'Booking Value ($M)', data: [51.53,54.75,55.28,60.21,61.51,56.27,58.72,58.85,54.93,55.28,59.28,64.47,61.34],
+      borderColor: C.accent, backgroundColor: 'rgba(6,182,212,0.1)', fill: true,
+      borderWidth: 2.5, pointBackgroundColor: 'white', pointRadius: 4, tension: 0.35
+    }]
+  },
+  options: { ...baseOpts, plugins: { ...baseOpts.plugins, legend: { display: false } } }
+});
+
+// Monthly Cancellation
+new Chart(document.getElementById('cancelChart'), {
+  type: 'bar',
+  data: {
+    labels: ["Apr'24","May'24","Jun'24","Jul'24","Aug'24","Sep'24","Oct'24","Nov'24","Dec'24","Jan'25","Feb'25","Mar'25","Apr'25"],
+    datasets: [{
+      label: 'Cancellation Rate (%)',
+      data: [16.5,17.3,17.5,30.3,28.8,17.7,17.4,15.9,25.8,23.7,17.5,17.6,16.1],
+      backgroundColor: [16.5,17.3,17.5,30.3,28.8,17.7,17.4,15.9,25.8,23.7,17.5,17.6,16.1].map(v =>
+        v > 25 ? 'rgba(239,68,68,0.75)' : v > 20 ? 'rgba(245,158,11,0.75)' : 'rgba(16,185,129,0.75)'),
+      borderRadius: 4
+    }]
+  },
+  options: {
+    ...baseOpts,
+    plugins: { ...baseOpts.plugins, legend: { display: false },
+      annotation: { annotations: { line1: { type: 'line', yMin: 20.2, yMax: 20.2, borderColor: 'white', borderWidth: 1.5, borderDash: [5,4] } } }
+    }
+  }
+});
+
+// Channel Revenue
+new Chart(document.getElementById('channelRevChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Mobile App', 'Travel Agent', 'Web'],
+    datasets: [{ data: [256.41,73.12,422.89], backgroundColor: [C.accent, C.yellow, C.green], borderWidth: 2, borderColor: C.bg }]
+  },
+  options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom', labels: { color: C.text, font: { size: 11 }, padding: 12 } } } }
+});
+
+// Channel Risk
+new Chart(document.getElementById('channelRiskChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Mobile App', 'Travel Agent', 'Web'],
+    datasets: [
+      { label: 'Cancellation %', data: [21.6,27.9,17.6], backgroundColor: 'rgba(239,68,68,0.75)', borderRadius: 4 },
+      { label: 'Failure %', data: [10.9,5.9,5.2], backgroundColor: 'rgba(245,158,11,0.75)', borderRadius: 4 }
+    ]
+  },
+  options: { ...baseOpts, plugins: { ...baseOpts.plugins } }
+});
+
+// Room Type
+new Chart(document.getElementById('roomChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Deluxe','Standard','Suite'],
+    datasets: [{
+      label: 'Cancellation Rate (%)', data: [16.0,23.3,18.0],
+      backgroundColor: [C.green, C.red, C.yellow], borderRadius: 6
+    }]
+  },
+  options: { ...baseOpts, plugins: { ...baseOpts.plugins, legend: { display: false } } }
+});
+
+// City Revenue
+new Chart(document.getElementById('cityChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Los Angeles','San Francisco','Chicago','Boston','Orlando','New York','Las Vegas','Dallas','Miami','Seattle'],
+    datasets: [{
+      label: 'Revenue ($M)', data: [77.11,77.06,76.71,75.47,75.08,74.93,74.86,74.02,73.63,73.55],
+      backgroundColor: 'rgba(6,182,212,0.65)', borderRadius: 4
+    }]
+  },
+  options: { ...baseOpts, indexAxis: 'y', plugins: { ...baseOpts.plugins, legend: { display: false } },
+    scales: { x: { grid: { color: C.grid }, ticks: { color: C.text, font: { size: 10 } } },
+              y: { grid: { color: 'transparent' }, ticks: { color: C.text, font: { size: 10 } } } } }
+});
+
+// Seasonal
+new Chart(document.getElementById('seasonalChart'), {
+  type: 'radar',
+  data: {
+    labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    datasets: [{
+      label: 'Cancellation Rate (%)',
+      data: [23.7,17.5,17.6,16.3,17.3,17.5,30.3,28.8,17.7,17.4,15.9,25.8],
+      borderColor: C.red, backgroundColor: 'rgba(239,68,68,0.15)', borderWidth: 2, pointBackgroundColor: C.red, pointRadius: 4
+    }]
+  },
+  options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { labels: { color: C.text } } },
+    scales: { r: { grid: { color: C.grid }, ticks: { color: C.text, font: { size: 9 }, backdropColor: 'transparent' }, pointLabels: { color: C.text, font: { size: 10 } } } } }
+});
+
+// Star Rating
+new Chart(document.getElementById('starChart'), {
+  type: 'bar',
+  data: {
+    labels: ['2★','3★','4★','5★'],
+    datasets: [{
+      label: 'Cancellation Rate (%)', data: [19.8,20.2,20.0,21.3],
+      backgroundColor: [C.green, C.yellow, C.yellow, C.red], borderRadius: 6
+    }]
+  },
+  options: { ...baseOpts, plugins: { ...baseOpts.plugins, legend: { display: false } },
+    scales: { x: { grid: { color: C.grid }, ticks: { color: C.text } }, y: { grid: { color: C.grid }, ticks: { color: C.text }, min: 18, max: 23 } } }
+});
+
+// Payment Method
+new Chart(document.getElementById('paymentChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Bank Transfer','Credit Card','Debit Card','PayPal'],
+    datasets: [{
+      label: 'Cancellation Rate (%)', data: [19.2,20.6,20.3,20.8],
+      backgroundColor: [C.green, C.yellow, C.yellow, C.red], borderRadius: 6
+    }]
+  },
+  options: { ...baseOpts, indexAxis: 'y', plugins: { ...baseOpts.plugins, legend: { display: false } },
+    scales: { x: { grid: { color: C.grid }, ticks: { color: C.text }, min: 17, max: 22 },
+              y: { grid: { color: 'transparent' }, ticks: { color: C.text } } } }
+});
+</script>
+</body>
+</html>
